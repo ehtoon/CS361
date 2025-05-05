@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const app = express();
@@ -62,6 +63,8 @@ const characters = [
 
 // Routes
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
+
+app.get('/help', (req, res) => {res.sendFile(path.join(__dirname, 'help.html'));});
 
 app.get('/api/characters', (req, res) => {
     res.json(characters);
