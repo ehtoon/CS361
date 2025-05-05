@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Marvel Rivals Character Database</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Marvel Rivals Character Database</h1>
+  <h2>Login to add your favorite characters</h2>
+
+  <form id="login-form" method="POST" action="/login">
+    <input type="text" name="username" placeholder="Username" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <button onclick="logout()">Logout</button>
+
+  <div class="grid-container" id="rivals-grid"></div>
+
+  <script>
+    let favoriteIds = [];
+
+    function loadCharacters() {
+      fetch('/api/characters')
+        .then(res => res.json())
+        .then(characters => {
+          const grid = document.getElementById('rivals-grid');
+          grid.innerHTML = '';
+          characters.forEach(char => {
+            const isFav = favoriteIds.includes(char.id);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+              <img src="${char.image}" alt="${char.hero}" />
+              <h2>${char.hero}</h2>
+              <p class="bio">${char.bio}</p>
+              <p class="role">${char.role}</p>
+              <button onclick="toggleFavorite(${char.id})">
+                ${isFav ? '★ Remove Favorite' : '☆ Add Favorite'}
+              </button>
+            `;
+            grid.appendChild(card);
+          });
+        })
+        .catch(err => {
+          console.error('Error loading characters:', err);
+        });
+    }
+
+    function toggleFavorite(id) {
+      fetch('/api/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      .then(res => {
+        if (res.status === 401) {
+          alert('Please log in to favorite characters.');
+        }
+        return res.json();
+      })
+      .then(() => {
+        fetchFavorites();
+      })
+      .catch(err => {
+        console.error('Error updating favorite:', err);
+      });
+    }
+
+    function fetchFavorites() {
+        fetch('/api/favorites')
+            .then(res => res.json())
+            .then(favs => {
+            favoriteIds = favs;
+            loadCharacters();
+        })
+        .catch(() => {
+            favoriteIds = [];
+          loadCharacters();
+        });
+    }
+
+    function logout() {
+        fetch('/logout').then(() => {
+            window.location.href = '/?logout=1';  // Redirect with ?logout=1 to trigger the logout message
+        });
+    }
+
+    // Load everything on start
+    fetchFavorites();
+    
+  </script>
+
+<div id="message" style="color: green; font-weight: bold; padding: 10px;"></div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const msg = document.getElementById('message');
+
+  if (params.get('logout') === '1') {
+    msg.textContent = 'You have been successfully logged out.';
+  }
+
+  if (params.get('login') === '1') {
+    msg.textContent = 'Welcome back! You are now logged in.';
+  }
+
+  if (msg.textContent) {
+    setTimeout(() => {
+      msg.textContent = '';
+      window.history.replaceState({}, document.title, '/'); // Clean URL
+    }, 3000);
+  }
+</script>
+
+</body>
+</html>
